@@ -45,11 +45,103 @@ init_stack:
 	ldi r16, low(RAMEND)
 	out SPL, r16             ; Low byte of stack pointer
 
+
+sbi DDRD, 3
+start:
+	sbi PORTD, 3
+	rcall wait
+	cbi PORTD, 3
+	rcall wait
+	rjmp start
+	
+
+; needs exactly 16 cycles with return and call
+prescaler0:
+	push r16
+	pop r16
+	push r16
+	pop r16
+	cp r16, r17
+	ret
+
+; exactly 160 cycles with return and call
+prescaler1:
+	rcall prescaler0
+	rcall prescaler0
+	rcall prescaler0
+	rcall prescaler0
+	rcall prescaler0
+	rcall prescaler0
+	rcall prescaler0
+	rcall prescaler0
+	rcall prescaler0
+	push r16
+	pop r16
+	push r16
+	pop r16
+	cp r16, r17
+	ret
+
+; exactly 1607 cycles
+prescaler2: 
+	rcall prescaler1
+	rcall prescaler1
+	rcall prescaler1
+	rcall prescaler1
+	rcall prescaler1
+	rcall prescaler1
+	rcall prescaler1
+	rcall prescaler1
+	rcall prescaler1
+	rcall prescaler1
+	ret
+
+; exactly 16.077 cycles
+prescaler3:
+	rcall prescaler2
+	rcall prescaler2
+	rcall prescaler2
+	rcall prescaler2
+	rcall prescaler2
+	rcall prescaler2
+	rcall prescaler2
+	rcall prescaler2
+	rcall prescaler2
+	rcall prescaler2
+	ret
+
+wait:
+	push r16
+	push r24
+	push r25
+	ldi r16, 0
+	ldi r24, 0xff
+	ldi r25, 0xff
+	loop2:
+		rcall prescaler3
+		sbiw r25:r24, 1
+		cp r24, r16
+		cpc r25, r16
+		brne loop2
+	pop r25
+	pop r24
+	pop r16
+	ret
+
+
+
+
+
+
+
+
+
+
 init_display:
 	sbi DDRD, CLK
 	sbi DDRD, DIO
 
-start:
+start2:
 	ldi r17, symbol_8
 	ldi r18, 0
 	rcall transmit_digit
@@ -63,6 +155,51 @@ start:
 	ldi r18, 3
 	rcall transmit_digit
 	rjmp start
+
+
+
+; ------------------------- Random Number Helper Methods-------------
+static uint8_t y8 = 1;
+
+uint8_t xorshift8(void) {
+    y8 ^= (y8 << 7);
+    y8 ^= (y8 >> 5);
+    return y8 ^= (y8 << 3);
+}
+; seed is always in r20
+next:
+	push r16
+
+	mov r16, r20 ; move seed into r16
+	lsl r16 ; shift left 7
+	lsl r16
+	lsl r16
+	lsl r16
+	lsl r16
+	lsl r16
+	lsl r16
+	eor r20, r26
+
+	mov r16, r20 ; move  seed into r16
+	lsr r16
+	lsr r16
+	lsr r16
+	lsr r16
+	lsr r16
+	eor r20, r16
+
+	mov r16, r20 ; move seed into r16
+	lsl r16
+	lsl r16
+	lsl r16
+	eor r20, r16
+
+	pop r16
+	ret
+
+
+	
+
 
 
 
