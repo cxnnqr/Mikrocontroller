@@ -73,15 +73,6 @@ button_wait_for_release:
 	rjmp button_wait_for_release
 
 
-; needs exactly 16 cycles with return and call
-prescaler0:
-	push r16
-	pop r16
-	push r16
-	pop r16
-	cp r16, r17
-	ret
-
 ; displays a circle on the display
 display_circle:
 	push r17
@@ -92,7 +83,7 @@ display_circle:
 	ldi r17, 0b00001001
 	ldi r18, 1
 	rcall transmit_digit
-	ldi r17, 0b10001001
+	ldi r17, 0b00001001
 	ldi r18, 2
 	rcall transmit_digit
 	ldi r17, 0b00001111
@@ -101,6 +92,17 @@ display_circle:
 	pop r18
 	pop r17
 	ret
+
+
+; needs exactly 16 cycles with return and call
+prescaler0:
+	push r16
+	pop r16
+	push r16
+	pop r16
+	cp r16, r17
+	ret
+
 
 ; exactly 160 cycles with return and call
 prescaler1:
@@ -205,6 +207,8 @@ next:
 	pop r16
 	ret
 
+
+
 ; ----------------------Display Handling Helper Routinen----------------------
 
 ; sends a sequence to 4 digit display
@@ -227,45 +231,153 @@ transmit_stop:
 
 ; transmits the byte stored in r16
 transmit_byte:
-	push r16
-	push r17
-    ldi r17, 8
-	loop_for_8:
-		cbi PORTD, CLK ; clk cleared before transmit of every bit
+	;------------transmit bit 0 -----------------------------
+	cbi PORTD, CLK ; clk cleared before transmit of every bit
 
-		; send data
-		; clear dio if bit 0 in r16 is cleared
-		sbrs r16, 0
-		cbi PORTD, DIO
+	; send data
+	; clear dio if bit 0 in r16 is cleared
+	sbrs r16, 0
+	cbi PORTD, DIO
 
-		; set dio if bit 0 in r16 is set
-		sbrc r16, 0
-		sbi PORTD, DIO
+	; set dio if bit 0 in r16 is set
+	sbrc r16, 0
+	sbi PORTD, DIO
 
-		sbi PORTD, CLK ; clk high -> display reads bit here
+	sbi PORTD, CLK ; clk high -> display reads bit here
+	;------------transmit bit 0------------------------------
 
-		; loop handling
-		lsr r16
-		dec r17
-		brne loop_for_8
 	
+	;------------transmit bit 1 -----------------------------
+	cbi PORTD, CLK ; clk cleared before transmit of every bit
+
+	; send data
+	; clear dio if bit 0 in r16 is cleared
+	sbrs r16, 1
+	cbi PORTD, DIO
+
+	; set dio if bit 0 in r16 is set
+	sbrc r16, 1
+	sbi PORTD, DIO
+
+	sbi PORTD, CLK ; clk high -> display reads bit here
+	;------------transmit bit 1------------------------------
+
+
+	;------------transmit bit 2 -----------------------------
+	cbi PORTD, CLK ; clk cleared before transmit of every bit
+
+	; send data
+	; clear dio if bit 0 in r16 is cleared
+	sbrs r16, 2
+	cbi PORTD, DIO
+
+	; set dio if bit 0 in r16 is set
+	sbrc r16, 2
+	sbi PORTD, DIO
+
+	sbi PORTD, CLK ; clk high -> display reads bit here
+	;------------transmit bit 2------------------------------
+
+
+	;------------transmit bit 3 -----------------------------
+	cbi PORTD, CLK ; clk cleared before transmit of every bit
+
+	; send data
+	; clear dio if bit 0 in r16 is cleared
+	sbrs r16, 3
+	cbi PORTD, DIO
+
+	; set dio if bit 0 in r16 is set
+	sbrc r16, 3
+	sbi PORTD, DIO
+
+	sbi PORTD, CLK ; clk high -> display reads bit here
+	;------------transmit bit 3------------------------------
+
+
+	;------------transmit bit 4 -----------------------------
+	cbi PORTD, CLK ; clk cleared before transmit of every bit
+
+	; send data
+	; clear dio if bit 0 in r16 is cleared
+	sbrs r16, 4
+	cbi PORTD, DIO
+
+	; set dio if bit 0 in r16 is set
+	sbrc r16, 4
+	sbi PORTD, DIO
+
+	sbi PORTD, CLK ; clk high -> display reads bit here
+	;------------transmit bit 4------------------------------
+
+
+	;------------transmit bit 5 -----------------------------
+	cbi PORTD, CLK ; clk cleared before transmit of every bit
+
+	; send data
+	; clear dio if bit 0 in r16 is cleared
+	sbrs r16, 5
+	cbi PORTD, DIO
+
+	; set dio if bit 0 in r16 is set
+	sbrc r16, 5
+	sbi PORTD, DIO
+
+	sbi PORTD, CLK ; clk high -> display reads bit here
+	;------------transmit bit 5------------------------------
+
+
+	;------------transmit bit 6 -----------------------------
+	cbi PORTD, CLK ; clk cleared before transmit of every bit
+
+	; send data
+	; clear dio if bit 0 in r16 is cleared
+	sbrs r16, 6
+	cbi PORTD, DIO
+
+	; set dio if bit 0 in r16 is set
+	sbrc r16, 6
+	sbi PORTD, DIO
+
+	sbi PORTD, CLK ; clk high -> display reads bit here
+	;------------transmit bit 6------------------------------
+
+
+	;------------transmit bit 7------------------------------
+	cbi PORTD, CLK ; clk cleared before transmit of every bit
+
+	; send data
+	; clear dio if bit 0 in r16 is cleared
+	sbrs r16, 7
+	cbi PORTD, DIO
+
+	; set dio if bit 0 in r16 is set
+	sbrc r16, 7
+	sbi PORTD, DIO
+
+	sbi PORTD, CLK ; clk high -> display reads bit here
+	;------------transmit bit 7------------------------------
+
+
 	; Acknowledge Handling
 	cbi PORTD, CLK
 	sbi PORTD, DIO
 	sbi PORTD, CLK
 
+	push r16
+	push r17
 	ldi r16, 0
 	ldi r17, 200
 	loop: ; wait for DIO bit to drop back to 0 (max 200 iterations)
 		cbi DDRD, DIO ; set DIO back to input to receive ack
+		inc r16
 
 		; exit loop if dio dropped to 0
 		sbis PORTD, DIO
 		rjmp finish
 
-
 		; finish loop if 200 iterations are done
-		dec r17
+		cp r16, r17
 		brne loop
 		sbi DDRD, DIO ; set DIO to output
 		cbi PORTD, DIO ; send 0
@@ -292,7 +404,7 @@ transmit_digit:
 	; send digit address and digit data
 	rcall transmit_start
 	; send digit address
-	ldi r17, ADDR_START
+	ldi r16, ADDR_START
 	add r16, r18 ; set address
 	rcall transmit_byte
 	; send digit data
