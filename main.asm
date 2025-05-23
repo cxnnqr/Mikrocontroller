@@ -45,10 +45,17 @@ init_stack:
 	ldi r16, low(RAMEND)
 	out SPL, r16             ; Low byte of stack pointer
 
+init_registers:
+	; initislize start value (2seconds)
+	ldi r24, 0x1
+	ldi r25, 0x0
+
+
 ; inititalizes the 4 digit display
 init_display:
 	sbi DDRD, CLK
 	sbi DDRD, DIO
+	rcall display_clear
 
 ldi r20, 0 ; initialize seed
 initialize_seed:
@@ -65,13 +72,192 @@ button_idle:
 button_pressed:
 	rcall next
 	rcall display_circle
+	push r24
+	push r25
+	push r20
+
+	; set wait time
+	ldi r24, 0b11010000
+	ldi r25, 0b00000111
+
+	loop_and_add:
+		adiw r25:r24, 12
+		dec r20
+		brne loop_and_add
+	
+	rcall wait
+	rcall display_clear
+	pop r20
+	pop r25
+	pop r24
+
+; make sure the user hasn't released the button early
+button_wait_for_prerelease:
+	sbis PIND, 4
+	rjmp button_idle
+
+
+; initialize time counters
+ldi r28, 0
+ldi r29, 0
+ldi r30, 0
+ldi r31, 0
 
 ; wait for button to be released
 button_wait_for_release:
 	sbis PIND, 4
-	rjmp button_idle
+	rjmp show_time ; jump to finish
+	rcall wait ; wait for 1ms
+	rcall increment_time ; increment time
 	rjmp button_wait_for_release
 
+show_time:
+	push r17
+	push r18
+
+	ldi r18, 3
+	mov r28, r16
+	rcall write_7_segment_code
+	rcall transmit_digit
+
+	ldi r18, 2
+	mov r29, r16
+	rcall write_7_segment_code
+	rcall transmit_digit
+
+	ldi r18, 1
+	mov r30, r16
+	rcall write_7_segment_code
+	rcall transmit_digit
+
+	ldi r18, 0
+	mov r31, r16
+	rcall write_7_segment_code
+	rcall transmit_digit
+
+	pop r18
+	pop r17
+	rjmp button_idle
+
+
+
+increment_time:
+	inc r28
+	cpi r28, 10
+	brne end
+	ldi r28, 0
+
+	inc r29
+	cpi r29, 10
+	brne end
+	ldi r29, 0
+
+	inc r20
+	cpi r30, 10
+	brne end
+	ldi r30, 0
+
+	inc r31
+	cpi r31, 10
+	brne end
+	dec r31
+
+	end:
+		ret
+
+; put the desired digit in r16
+; modifies r17 globally
+write_7_segment_code:
+	push r16
+
+	cpi r16, 0
+	breq digit_0
+
+	cpi r16, 1
+	breq digit_1
+
+	cpi r16, 2
+	breq digit_2
+
+	cpi r16, 3
+	breq digit_3
+
+	cpi r16, 4
+	breq digit_4
+
+	cpi r16, 5
+	breq digit_5
+
+	cpi r16, 6
+	breq digit_6
+
+	cpi r16, 7
+	breq digit_7
+
+	cpi r16, 8
+	breq digit_8
+
+	cpi r16, 9
+	breq digit_9
+
+	digit_0:
+		ldi r17, symbol_0
+		ret
+
+	digit_1: 
+		ldi r17, symbol_1
+		ret
+
+	digit_2: 
+		ldi r17, symbol_2
+		ret
+
+	digit_3:
+		ldi r17, symbol_3
+		ret
+
+	digit_4:
+		ldi r17, symbol_4
+		ret
+
+	digit_5:
+		ldi r17, symbol_5
+		ret
+
+	digit_6:
+		ldi r17, symbol_6
+		ret
+
+	digit_7:
+		ldi r17, symbol_7
+		ret
+
+	digit_8:
+		ldi r17, symbol_8
+		ret
+
+	digit_9:
+		ldi r17, symbol_9
+		ret
+
+display_clear:
+	push r17
+	push r18
+	ldi r17, 0b00000000
+	ldi r18, 0
+	rcall transmit_digit
+	ldi r17, 0b00000000
+	ldi r18, 1
+	rcall transmit_digit
+	ldi r17, 0b00000000
+	ldi r18, 2
+	rcall transmit_digit
+	ldi r17, 0b00000000
+	ldi r18, 3
+	rcall transmit_digit
+	pop r18
+	pop r17
+	ret
 
 ; displays a circle on the display
 display_circle:
