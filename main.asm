@@ -45,15 +45,33 @@ init_stack:
 	ldi r16, low(RAMEND)
 	out SPL, r16             ; Low byte of stack pointer
 
+; inititalizes the 4 digit display
+init_display:
+	sbi DDRD, CLK
+	sbi DDRD, DIO
 
-sbi DDRD, 3
-start:
-	sbi PORTD, 3
-	rcall wait
-	cbi PORTD, 3
-	rcall wait
-	rjmp start
-	
+ldi r20, 0 ; initialize seed
+initialize_seed:
+	sbic PIND, 4
+	rjmp button_pressed
+	inc r20
+	rjmp initialize_seed
+
+button_idle:
+	sbic PIND, 4
+	rjmp button_pressed
+	rjmp button_idle
+
+button_pressed:
+	rcall next
+	rcall display_circle
+
+; wait for button to be released
+button_wait_for_release:
+	sbis PIND, 4
+	rjmp button_idle
+	rjmp button_wait_for_release
+
 
 ; needs exactly 16 cycles with return and call
 prescaler0:
@@ -62,6 +80,26 @@ prescaler0:
 	push r16
 	pop r16
 	cp r16, r17
+	ret
+
+; displays a circle on the display
+display_circle:
+	push r17
+	push r18
+	ldi r17, 0b00111001
+	ldi r18, 0
+	rcall transmit_digit
+	ldi r17, 0b00001001
+	ldi r18, 1
+	rcall transmit_digit
+	ldi r17, 0b10001001
+	ldi r18, 2
+	rcall transmit_digit
+	ldi r17, 0b00001111
+	ldi r18, 3
+	rcall transmit_digit
+	pop r18
+	pop r17
 	ret
 
 ; exactly 160 cycles with return and call
@@ -97,6 +135,7 @@ prescaler2:
 	ret
 
 ; exactly 16.077 cycles
+; exactly 1ms
 prescaler3:
 	rcall prescaler2
 	rcall prescaler2
@@ -110,13 +149,17 @@ prescaler3:
 	rcall prescaler2
 	ret
 
+; pauses a predefined amount of milliseconds
+; r24 holds low byte
+; r25 holds high byte
+; r24 and r25 have to be set to the amount of desired milliseconds
+; that wait should pause for
+; so you can wait up to 0xffff milliseconds which is 65535ms - about 1 minute
 wait:
 	push r16
 	push r24
 	push r25
 	ldi r16, 0
-	ldi r24, 0xff
-	ldi r25, 0xff
 	loop2:
 		rcall prescaler3
 		sbiw r25:r24, 1
@@ -128,45 +171,10 @@ wait:
 	pop r16
 	ret
 
-
-
-
-
-
-
-
-
-
-init_display:
-	sbi DDRD, CLK
-	sbi DDRD, DIO
-
-start2:
-	ldi r17, symbol_8
-	ldi r18, 0
-	rcall transmit_digit
-	ldi r17, symbol_8
-	ldi r18, 1
-	rcall transmit_digit
-	ldi r17, symbol_8
-	ldi r18, 2
-	rcall transmit_digit
-	ldi r17, symbol_8
-	ldi r18, 3
-	rcall transmit_digit
-	rjmp start
-
-
-
 ; ------------------------- Random Number Helper Methods-------------
-static uint8_t y8 = 1;
-
-uint8_t xorshift8(void) {
-    y8 ^= (y8 << 7);
-    y8 ^= (y8 >> 5);
-    return y8 ^= (y8 << 3);
-}
-; seed is always in r20
+; takes the seed/random number in r20 and creates the next one
+; with xorshift algorithm inside r20
+; so you can obtain the new random number from r20
 next:
 	push r16
 
@@ -196,12 +204,6 @@ next:
 
 	pop r16
 	ret
-
-
-	
-
-
-
 
 ; ----------------------Display Handling Helper Routinen----------------------
 
@@ -290,7 +292,7 @@ transmit_digit:
 	; send digit address and digit data
 	rcall transmit_start
 	; send digit address
-	ldi r16, ADDR_START
+	ldi r17, ADDR_START
 	add r16, r18 ; set address
 	rcall transmit_byte
 	; send digit data
