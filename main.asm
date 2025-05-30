@@ -116,22 +116,22 @@ show_time:
 	push r18
 
 	ldi r18, 3
-	mov r28, r16
+	mov r16, r28
 	rcall write_7_segment_code
 	rcall transmit_digit
 
 	ldi r18, 2
-	mov r29, r16
+	mov r16, r29
 	rcall write_7_segment_code
 	rcall transmit_digit
 
 	ldi r18, 1
-	mov r30, r16
+	mov r16, r30
 	rcall write_7_segment_code
 	rcall transmit_digit
 
 	ldi r18, 0
-	mov r31, r16
+	mov r16, r31
 	rcall write_7_segment_code
 	rcall transmit_digit
 
@@ -152,7 +152,7 @@ increment_time:
 	brne end
 	ldi r29, 0
 
-	inc r20
+	inc r30
 	cpi r30, 10
 	brne end
 	ldi r30, 0
@@ -160,7 +160,10 @@ increment_time:
 	inc r31
 	cpi r31, 10
 	brne end
-	dec r31
+	ldi r28, 9
+	ldi r29, 9
+	ldi r30, 9
+	ldi r31, 9
 
 	end:
 		ret
@@ -202,42 +205,52 @@ write_7_segment_code:
 
 	digit_0:
 		ldi r17, symbol_0
+		pop r16
 		ret
 
 	digit_1: 
 		ldi r17, symbol_1
+		pop r16
 		ret
 
 	digit_2: 
 		ldi r17, symbol_2
+		pop r16
 		ret
 
 	digit_3:
 		ldi r17, symbol_3
+		pop r16
 		ret
 
 	digit_4:
 		ldi r17, symbol_4
+		pop r16
 		ret
 
 	digit_5:
 		ldi r17, symbol_5
+		pop r16
 		ret
 
 	digit_6:
 		ldi r17, symbol_6
+		pop r16
 		ret
 
 	digit_7:
 		ldi r17, symbol_7
+		pop r16
 		ret
 
 	digit_8:
 		ldi r17, symbol_8
+		pop r16
 		ret
 
 	digit_9:
 		ldi r17, symbol_9
+		pop r16
 		ret
 
 display_clear:
