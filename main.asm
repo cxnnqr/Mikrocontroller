@@ -2,8 +2,9 @@
 ; Mikro.asm
 ;
 ; Created: 09/05/2025 13:41:14
-; Author : JDuec
-;
+; Author: Jonathan Dueck, Connor Neubauer
+; Gruppe F
+; IO Belegung: 4-Digit Display => D2, Button => D4
 
 ; Coding for 7 segment:
 ; 1 => light up
