@@ -387,7 +387,7 @@ next:
 	lsl r16
 	lsl r16
 	lsl r16
-	eor r20, r26
+	eor r20, r16
 
 	mov r16, r20 ; move  seed into r16
 	lsr r16
